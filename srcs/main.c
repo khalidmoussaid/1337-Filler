@@ -17,6 +17,14 @@ typedef struct	s_pos
 	int			y;
 }				t_pos;
 
+typedef struct s_list_pt
+{
+	t_pos p;
+	t_list_pt *next;
+
+} t_list_pt;
+
+
 typedef struct s_filler
 {
 	int id;
@@ -27,7 +35,17 @@ typedef struct s_filler
 	int     piece_len;
     int     piece_h;
     int     piece_w;
+	t_list_pt *lpt;
 }               t_filler;
+
+
+typedef struct s_option
+{
+	t_pos			pos;
+	int				dist;
+	struct s_option	*next;
+}				t_option;
+
 
 t_pos	ft_xytopos(int x, int y)
 {
@@ -37,7 +55,50 @@ t_pos	ft_xytopos(int x, int y)
 	p.y = y;
 	return (p);
 }
-int		checkposition(t_filler filler, t_pos pos, t_pos *p)
+
+int 	ft_distance(t_pos p1, t_pos p2)
+{
+	int a;
+	int b;
+
+	a = p2.x - p1.x;
+	b = p2.y - p1.y;
+	return (a * a + b * b);
+}
+
+int calcule_dist(t_filler filler, int x, int y, char c)
+{
+	int k;
+	int h;
+	int min_d;
+	int d;
+
+	h = 0;
+	min_d = -1;
+	//printf("%d/%d", filler.map.w_size, filler.map.h_size)
+	while (h < filler.map.h_size)
+	{
+		k = 0;
+		while (k < filler.map.w_size)
+		{
+			if (filler.map.tab[h][k] == c || filler.map.tab[h][k] == c - 32)
+			{
+				d = ft_distance(ft_xytopos(x,y), ft_xytopos(h,k));
+				if (min_d == -1)
+					min_d = d;
+				else if (d < min_d)
+					min_d = d;
+			}
+			k++;
+		}
+		h++;
+	}
+	return (min_d);
+
+}
+
+
+int		checkposition(t_filler filler, t_pos pos, int *p)
 {
 	/*
 	
@@ -64,6 +125,10 @@ int		checkposition(t_filler filler, t_pos pos, t_pos *p)
 	int i = 0;
 	int j;
 	int h = 0;
+//	int k = 0;
+
+	
+	//int *p = (int *)malloc(sizeof(int) * filler.piece_len);
 	while (i < filler.piece_h )
 	{
 		
@@ -76,12 +141,17 @@ int		checkposition(t_filler filler, t_pos pos, t_pos *p)
 				return (0);
 			if (filler.piece[i][j] == '*')
 			{
-				printf("[%d,%d]\n", i + pos.x, j + pos.y);
+				//printf("[%d,%d]\n", i + pos.x, j + pos.y);
+				//*p = ft_xytopos(i + pos.x, j + pos.y);
+				// 12  1*9 + 2 = 2
+				//p[k] = (i + pos.x) * filler.map.w_size + j + pos.y;
+				*p = calcule_dist(filler, i + pos.x, j + pos.y, (filler.id == 1 ? 'X' : 'O'));
+				//k++;
 				if (filler.map.tab[i + pos.x][j + pos.y] == filler.c)
-				{
-					*p = ft_xytopos(i + pos.x, j + pos.y);
 					h++;
-				}
+				if (h == 2)
+					return 0;
+			 
 			}
 			
 			j++;
@@ -92,13 +162,6 @@ int		checkposition(t_filler filler, t_pos pos, t_pos *p)
 		return (1);
 	return (0);
 }
-
-typedef struct s_option
-{
-	t_pos			pos;
-	int				dist;
-	struct s_option	*next;
-}				t_option;
 
 int			ft_sqrt(int n)
 {
@@ -114,15 +177,7 @@ int			ft_sqrt(int n)
 	return -1;
 }
 
-int 	ft_distance(t_pos p1, t_pos p2)
-{
-	int a;
-	int b;
 
-	a = p2.x - p1.x;
-	b = p2.y - p1.y;
-	return (a * a + b * b);
-}
 
 void		ft_addoption(t_option **l, t_pos p, int dist)
 {
@@ -175,40 +230,43 @@ t_pos 	ft_getpos(t_filler filler)
 	t_pos pos_toret;
 	t_pos p2;
 	t_option *l;
-	t_pos	p;
+	int	p;
 
 	l = NULL;
 	p2 = ft_getlastpos(filler);
 	pos = ft_xytopos(0, 0);
 	pos_toret = ft_xytopos(0, 0);
 	int min;
-	int min_new = 0;
 	min = -1;
 	while (i < filler.map.h_size)
 	{
 		j = 0;
 		while (j < filler.map.w_size)
 		{
-			
+			//printf("[%d,%d]\n", pos.x,pos.y);
 			pos = ft_xytopos(i, j);
 			if (checkposition(filler, pos, &p))
 			{
-				min_new = ft_distance(p, p2);;
+				//14-24 14-25 14-26 14-27 14-28 14-29
+				//14*40 + 26
 				if (min == -1)
 				{
-					min = min_new;
-					pos_toret = pos;
-				}else if (min < min_new)
-				{
-					min = min_new;
+					min = p;
 					pos_toret = pos;
 				}
-				break;
+				else if (min > p)
+				{
+					min = p;
+					pos_toret = pos;
+				} 
+				
+				
 			}
 			j++;
 		}
 		i++;
 	}
+	//printf("[%d,%d] -> %d\n", pos_toret.x,pos_toret.y, min);//, p[1]);
 	return (pos_toret);
 }
 
